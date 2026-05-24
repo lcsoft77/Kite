@@ -1,0 +1,18 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.3.5">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>7f3a9b2c-4d6e-4f8a-b1c5-3e9d7a2f6b4e</UserSecretsId>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ECS.Task/ECS.Task.csproj" />
+    <ProjectReference Include="..\ECS.Sender\ECS.Sender.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Kite.Aspire\Kite.Aspire.csproj" IsAspireProjectResource="false" />
+  </ItemGroup>
+
+</Project>

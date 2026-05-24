@@ -1,0 +1,49 @@
+name: Publish Wiki
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checkout wiki
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: wiki
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync docs to wiki
+        run: |
+          # Copy all markdown files from docs/ to the wiki directory
+          cp docs/*.md wiki/
+
+          cd wiki
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage all changes (including new untracked files)
+          git add .
+
+          # Check for changes
+          if git diff --staged --quiet; then
+            echo "No changes to publish"
+            exit 0
+          fi
+
+          # Commit and push
+          git commit -m "docs: sync wiki from docs/ directory"
+          git push

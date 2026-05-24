@@ -1,0 +1,193 @@
+@page "/dynamodb/{TableName}"
+@implements IDisposable
+@inject IServiceRegistry Registry
+
+@using System.Text.Json
+@using Kite.Core.Models
+
+<PageTitle>DynamoDB: @TableName</PageTitle>
+
+@if (table is null)
+{
+    <FluentLabel>DynamoDB table "@TableName" not found.</FluentLabel>
+    return;
+}
+
+<FluentLabel Typo="Typography.H3">🗄️ @table.TableName</FluentLabel>
+<FluentLabel Style="color: var(--neutral-foreground-hint);">
+    PK: <strong>@table.PartitionKeyName</strong> (@table.PartitionKeyType)
+    @if (table.SortKeyName is not null)
+    {
+        <span>&nbsp;| SK: <strong>@table.SortKeyName</strong> (@table.SortKeyType)</span>
+    }
+</FluentLabel>
+<FluentDivider Style="margin: 12px 0;" />
+
+<FluentGrid Spacing="3">
+    <FluentGridItem xs="12" sm="4">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H2" Style="color: var(--accent-fill-rest);">@itemCount</FluentLabel>
+            <FluentLabel>Items</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="4">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H2" Style="color: var(--accent-fill-rest);">@table.BillingMode</FluentLabel>
+            <FluentLabel>Billing Mode</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="4">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H2" Style="color: var(--accent-fill-rest);">@table.TableStatus</FluentLabel>
+            <FluentLabel>Status</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+</FluentGrid>
+
+<div style="height: 16px;"></div>
+
+<FluentTabs>
+    <FluentTab Label="Items">
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
+            <FluentSearch @bind-Value="searchText"
+                          Placeholder="Filter by partition key value..."
+                          Style="width: 320px;"
+                          @oninput="OnSearchInput" />
+            <FluentBadge Appearance="Appearance.Neutral">@filteredRows.Count items</FluentBadge>
+        </div>
+
+        @if (filteredRows.Count == 0)
+        {
+            <FluentLabel Style="color: var(--neutral-foreground-hint);">No items found.</FluentLabel>
+        }
+        else
+        {
+            <FluentDataGrid Items="@filteredRows.AsQueryable()" Style="width: 100%;">
+                <PropertyColumn Property="@(r => r.Pk)" Title="@table.PartitionKeyName" Sortable="true" />
+                @if (table.SortKeyName is not null)
+                {
+                    <PropertyColumn Property="@(r => r.Sk)" Title="@table.SortKeyName" Sortable="true" />
+                }
+                <PropertyColumn Property="@(r => r.AttributePreview)" Title="Attributes" />
+                <TemplateColumn Title="Actions">
+                    <FluentButton Appearance="Appearance.Lightweight"
+                                  IconStart="@(new Icons.Regular.Size16.Delete())"
+                                  OnClick="@(() => DeleteItem(context.Pk, context.Sk))">
+                        Delete
+                    </FluentButton>
+                </TemplateColumn>
+            </FluentDataGrid>
+        }
+    </FluentTab>
+    <FluentTab Label="Request Log">
+        @if (table.RequestLog.Count == 0)
+        {
+            <FluentLabel Style="color: var(--neutral-foreground-hint);">No requests yet.</FluentLabel>
+        }
+        else
+        {
+            <FluentDataGrid Items="@table.RequestLog.AsQueryable()" Style="width: 100%;">
+                <PropertyColumn Property="@(e => e.Timestamp.ToString("HH:mm:ss.fff"))" Title="Time" />
+                <PropertyColumn Property="@(e => e.Operation)" Title="Operation" />
+                <PropertyColumn Property="@(e => e.Details)" Title="Detail" />
+            </FluentDataGrid>
+        }
+    </FluentTab>
+</FluentTabs>
+
+@code {
+    [Parameter] public string TableName { get; set; } = string.Empty;
+
+    private DynamoDbTable? table;
+    private string searchText = string.Empty;
+    private List<ItemRow> allRows = new();
+    private List<ItemRow> filteredRows = new();
+    private int itemCount => table?.ItemCount() ?? 0;
+
+    private record ItemRow(string Pk, string Sk, string AttributePreview);
+
+    protected override void OnParametersSet()
+    {
+        table = Registry.GetDynamoDbTable(TableName);
+        if (table is not null)
+        {
+            table.OnChange += HandleChange;
+            RefreshRows();
+        }
+    }
+
+    private void HandleChange() => InvokeAsync(() =>
+    {
+        RefreshRows();
+        StateHasChanged();
+    });
+
+    private void RefreshRows()
+    {
+        if (table is null) return;
+
+        allRows = table.Scan().Select(item =>
+        {
+            var pk = GetKeyValue(item, table.PartitionKeyName);
+            var sk = table.SortKeyName is not null ? GetKeyValue(item, table.SortKeyName) : string.Empty;
+
+            // Build attribute preview: show up to 3 non-key attributes
+            var keyNames = new HashSet<string> { table.PartitionKeyName };
+            if (table.SortKeyName is not null) keyNames.Add(table.SortKeyName);
+
+            var preview = item
+                .Where(kv => !keyNames.Contains(kv.Key))
+                .Take(3)
+                .Select(kv => $"{kv.Key}={GetDisplayValue(kv.Value)}")
+                .ToList();
+
+            return new ItemRow(pk, sk, string.Join(", ", preview));
+        }).ToList();
+
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        filteredRows = string.IsNullOrWhiteSpace(searchText)
+            ? new List<ItemRow>(allRows)
+            : allRows.Where(r => r.Pk.Contains(searchText, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchText = e.Value?.ToString() ?? string.Empty;
+        ApplyFilter();
+    }
+
+    private void DeleteItem(string pk, string sk)
+    {
+        if (table is null) return;
+        table.DeleteItem(pk, sk);
+        table.NotifyChange();
+    }
+
+    private static string GetKeyValue(Dictionary<string, JsonElement> item, string keyName)
+    {
+        if (!item.TryGetValue(keyName, out var el)) return string.Empty;
+        return GetDisplayValue(el);
+    }
+
+    private static string GetDisplayValue(JsonElement el) => el.ValueKind switch
+    {
+        JsonValueKind.Object =>
+            el.TryGetProperty("S", out var s) ? s.GetString() ?? string.Empty :
+            el.TryGetProperty("N", out var n) ? n.GetString() ?? string.Empty :
+            el.TryGetProperty("BOOL", out var b) ? b.GetBoolean().ToString() :
+            el.GetRawText(),
+        JsonValueKind.String => el.GetString() ?? string.Empty,
+        JsonValueKind.Number => el.GetRawText(),
+        _ => el.GetRawText()
+    };
+
+    public void Dispose()
+    {
+        if (table is not null)
+            table.OnChange -= HandleChange;
+    }
+}

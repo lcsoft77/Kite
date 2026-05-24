@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.14.0" />
+    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.14.0" />
+    <!-- Ensures Blazor framework JS files (blazor.web.js, blazor.server.js) are in the
+         NuGet cache so the standalone dashboard can serve them at runtime. The Web SDK
+         auto-references this package but the Razor SDK (used by RCLs) does not. -->
+    <PackageReference Include="Microsoft.AspNetCore.App.Internal.Assets" Version="10.0.5" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kite.Host\Kite.Host.csproj" />
+    <ProjectReference Include="..\Kite.EventBridge\Kite.EventBridge.csproj" />
+  </ItemGroup>
+</Project>

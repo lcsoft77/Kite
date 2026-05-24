@@ -1,0 +1,69 @@
+@inherits LayoutComponentBase
+
+<FluentLayout>
+    <FluentHeader>
+        <FluentLabel Typo="Typography.H4" Style="color: white; margin: 0;">
+            🌩️ Kite Dashboard
+        </FluentLabel>
+    </FluentHeader>
+
+    <FluentStack Orientation="Orientation.Horizontal" Style="height: calc(100vh - 52px);">
+        <FluentNavMenu Width="220" Title="Navigation">
+            <FluentNavLink Href="/" Match="NavLinkMatch.All" Icon="@(new Icons.Regular.Size20.Home())">Dashboard</FluentNavLink>
+            <FluentNavGroup Title="SQS Queues" Icon="@(new Icons.Regular.Size20.Mail())">
+                @foreach (var queue in Registry.GetAllSqsQueues())
+                {
+                    <FluentNavLink Href="@($"/sqs/{Uri.EscapeDataString(queue.Name)}")">@queue.Name</FluentNavLink>
+                }
+            </FluentNavGroup>
+            <FluentNavGroup Title="S3 Buckets" Icon="@(new Icons.Regular.Size20.Folder())">
+                @foreach (var bucket in Registry.GetAllS3Buckets())
+                {
+                    <FluentNavLink Href="@($"/s3/{Uri.EscapeDataString(bucket.Name)}")">@bucket.Name</FluentNavLink>
+                }
+            </FluentNavGroup>
+            <FluentNavGroup Title="EventBridge" Icon="@(new Icons.Regular.Size20.Flash())">
+                @foreach (var bus in Registry.GetAllEventBridgeBuses())
+                {
+                    <FluentNavLink Href="@($"/eventbridge/{Uri.EscapeDataString(bus.Name)}")">@bus.Name</FluentNavLink>
+                }
+            </FluentNavGroup>
+            <FluentNavGroup Title="Lambda Functions" Icon="@(new Icons.Regular.Size20.Code())">
+                @foreach (var fn in Registry.GetAllLambdas())
+                {
+                    <FluentNavLink Href="@($"/lambda/{Uri.EscapeDataString(fn.Name)}")">@fn.Name</FluentNavLink>
+                }
+            </FluentNavGroup>
+            <FluentNavGroup Title="ECS Clusters" Icon="@(new Icons.Regular.Size20.AppFolder())">
+                @foreach (var cluster in Registry.GetAllEcsClusters())
+                {
+                    <FluentNavLink Href="@($"/ecs/{Uri.EscapeDataString(cluster.Name)}")">@cluster.Name</FluentNavLink>
+                }
+            </FluentNavGroup>
+            <FluentNavGroup Title="SNS Topics" Icon="@(new Icons.Regular.Size20.AlertOn())">
+                @foreach (var topic in Registry.GetAllSnsTopics())
+                {
+                    <FluentNavLink Href="@($"/sns/{Uri.EscapeDataString(topic.Name)}")">@topic.Name</FluentNavLink>
+                }
+            </FluentNavGroup>
+            <FluentNavGroup Title="DynamoDB Tables" Icon="@(new Icons.Regular.Size20.Database())">
+                @foreach (var table in Registry.GetAllDynamoDbTables())
+                {
+                    <FluentNavLink Href="@($"/dynamodb/{Uri.EscapeDataString(table.TableName)}")">@table.TableName</FluentNavLink>
+                }
+            </FluentNavGroup>
+            <FluentNavLink Href="/ssm" Icon="@(new Icons.Regular.Size20.Key())">SSM Parameters</FluentNavLink>
+        </FluentNavMenu>
+
+        <FluentBodyContent Style="padding: 16px; overflow-y: auto; flex: 1;">
+            @Body
+        </FluentBodyContent>
+    </FluentStack>
+</FluentLayout>
+
+<FluentToastProvider />
+<FluentDialogProvider />
+
+@code {
+    [Inject] private IServiceRegistry Registry { get; set; } = default!;
+}

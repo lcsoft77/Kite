@@ -1,0 +1,121 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Kite.ApiGateway/Kite.ApiGateway.csproj" />
+    <Project Path="src/Kite.Aspire/Kite.Aspire.csproj" />
+    <Project Path="src/Kite.Core/Kite.Core.csproj" />
+    <Project Path="src/Kite.Dashboard/Kite.Dashboard.csproj" />
+    <Project Path="src/Kite.ECS/Kite.ECS.csproj" />
+    <Project Path="src/Kite.EventBridge/Kite.EventBridge.csproj" />
+    <Project Path="src/Kite.Host/Kite.Host.csproj" />
+    <Project Path="src/Kite.Lambda/Kite.Lambda.csproj" />
+    <Project Path="src/Kite.S3/Kite.S3.csproj" />
+    <Project Path="src/Kite.SQS/Kite.SQS.csproj" />
+    <Project Path="src/Kite.SSM/Kite.SSM.csproj" />
+    <Project Path="src/Kite.SNS/Kite.SNS.csproj" />
+    <Project Path="src/Kite.DynamoDB/Kite.DynamoDB.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Kite.SampleLambda/Kite.SampleLambda.csproj" />
+    <Project Path="tests/Kite.Tests.Integration/Kite.Tests.Integration.csproj" />
+    <Project Path="tests/Kite.Tests.Unit/Kite.Tests.Unit.csproj" />
+  </Folder>
+  <Folder Name="/examples/Standard/SQS/">
+    <Project Path="examples/Standard/SQS/SQS.Lambda/SQS.Lambda.csproj" />
+    <Project Path="examples/Standard/SQS/SQS.Emulator/SQS.Emulator.csproj" />
+    <Project Path="examples/Standard/SQS/SQS.Sender/SQS.Sender.csproj" />
+  </Folder>
+  <Folder Name="/examples/Standard/S3/">
+    <Project Path="examples/Standard/S3/S3.Lambda/S3.Lambda.csproj" />
+    <Project Path="examples/Standard/S3/S3.Emulator/S3.Emulator.csproj" />
+    <Project Path="examples/Standard/S3/S3.Client/S3.Client.csproj" />
+  </Folder>
+  <Folder Name="/examples/Standard/EventBridge/">
+    <Project Path="examples/Standard/EventBridge/EventBridge.Lambda/EventBridge.Lambda.csproj" />
+    <Project Path="examples/Standard/EventBridge/EventBridge.Emulator/EventBridge.Emulator.csproj" />
+    <Project Path="examples/Standard/EventBridge/EventBridge.Publisher/EventBridge.Publisher.csproj" />
+  </Folder>
+  <Folder Name="/examples/Standard/SNS/">
+    <Project Path="examples/Standard/SNS/SNS.Emulator/SNS.Emulator.csproj" />
+    <Project Path="examples/Standard/SNS/SNS.Publisher/SNS.Publisher.csproj" />
+  </Folder>
+  <Folder Name="/examples/Standard/ECS/">
+    <Project Path="examples/Standard/ECS/ECS.Emulator/ECS.Emulator.csproj" />
+    <Project Path="examples/Standard/ECS/ECS.Sender/ECS.Sender.csproj" />
+  </Folder>
+  <Folder Name="/examples/Standard/" />
+  <Folder Name="/examples/Standard/DynamoDB/">
+    <Project Path="examples/Standard/DynamoDB/DynamoDB.Emulator/DynamoDB.Emulator.csproj" />
+    <Project Path="examples/Standard/DynamoDB/DynamoDB.Client/DynamoDB.Client.csproj" />
+  </Folder>
+  <Folder Name="/examples/Standard/SSM/">
+    <Project Path="examples/Standard/SSM/SSM.Emulator/SSM.Emulator.csproj" />
+    <Project Path="examples/Standard/SSM/SSM.Client/SSM.Client.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire/" />
+  <Folder Name="/examples/Aspire/SQS.Aspire/">
+    <Project Path="examples/Aspire/SQS.Aspire/SQS.Lambda/SQS.Lambda.csproj" />
+    <Project Path="examples/Aspire/SQS.Aspire/SQS.AppHost/SQS.AppHost.csproj" />
+    <Project Path="examples/Aspire/SQS.Aspire/SQS.Sender/SQS.Sender.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire/S3.Aspire/">
+    <Project Path="examples/Aspire/S3.Aspire/S3.Lambda/S3.Lambda.csproj" />
+    <Project Path="examples/Aspire/S3.Aspire/S3.AppHost/S3.AppHost.csproj" />
+    <Project Path="examples/Aspire/S3.Aspire/S3.Client/S3.Client.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire/EventBridge.Aspire/">
+    <Project Path="examples/Aspire/EventBridge.Aspire/EventBridge.Lambda/EventBridge.Lambda.csproj" />
+    <Project Path="examples/Aspire/EventBridge.Aspire/EventBridge.AppHost/EventBridge.AppHost.csproj" />
+    <Project Path="examples/Aspire/EventBridge.Aspire/EventBridge.Publisher/EventBridge.Publisher.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire/SNS.Aspire/">
+    <Project Path="examples/Aspire/SNS.Aspire/SNS.AppHost/SNS.AppHost.csproj" />
+    <Project Path="examples/Aspire/SNS.Aspire/SNS.Publisher/SNS.Publisher.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire/ECS.Aspire/">
+    <Project Path="examples/Aspire/ECS.Aspire/ECS.AppHost/ECS.AppHost.csproj" />
+    <Project Path="examples/Aspire/ECS.Aspire/ECS.Sender/ECS.Sender.csproj" />
+    <Project Path="examples/Aspire/ECS.Aspire/ECS.Task/ECS.Task.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire/DynamoDB.Aspire/">
+    <Project Path="examples/Aspire/DynamoDB.Aspire/DynamoDB.AppHost/DynamoDB.AppHost.csproj" />
+    <Project Path="examples/Aspire/DynamoDB.Aspire/DynamoDB.Client/DynamoDB.Client.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire/SSM.Aspire/">
+    <Project Path="examples/Aspire/SSM.Aspire/SSM.AppHost/SSM.AppHost.csproj" />
+    <Project Path="examples/Aspire/SSM.Aspire/SSM.Client/SSM.Client.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire.Dashboard/SQS.Aspire/">
+    <Project Path="examples/Aspire.Dashboard/SQS.Aspire/SQS.Lambda/SQS.Lambda.csproj" />
+    <Project Path="examples/Aspire.Dashboard/SQS.Aspire/SQS.AppHost/SQS.AppHost.csproj" />
+    <Project Path="examples/Aspire.Dashboard/SQS.Aspire/SQS.Sender/SQS.Sender.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire.Dashboard/S3.Aspire/">
+    <Project Path="examples/Aspire.Dashboard/S3.Aspire/S3.Lambda/S3.Lambda.csproj" />
+    <Project Path="examples/Aspire.Dashboard/S3.Aspire/S3.AppHost/S3.AppHost.csproj" />
+    <Project Path="examples/Aspire.Dashboard/S3.Aspire/S3.Client/S3.Client.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire.Dashboard/EventBridge.Aspire/">
+    <Project Path="examples/Aspire.Dashboard/EventBridge.Aspire/EventBridge.Lambda/EventBridge.Lambda.csproj" />
+    <Project Path="examples/Aspire.Dashboard/EventBridge.Aspire/EventBridge.AppHost/EventBridge.AppHost.csproj" />
+    <Project Path="examples/Aspire.Dashboard/EventBridge.Aspire/EventBridge.Publisher/EventBridge.Publisher.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire.Dashboard/SNS.Aspire/">
+    <Project Path="examples/Aspire.Dashboard/SNS.Aspire/SNS.AppHost/SNS.AppHost.csproj" />
+    <Project Path="examples/Aspire.Dashboard/SNS.Aspire/SNS.Publisher/SNS.Publisher.csproj" />
+  </Folder>
+  <Folder Name="/examples/" />
+  <Folder Name="/examples/Aspire.Dashboard/" />
+  <Folder Name="/examples/Aspire.Dashboard/DynamoDB.Aspire/">
+    <Project Path="examples/Aspire.Dashboard/DynamoDB.Aspire/DynamoDB.AppHost/DynamoDB.AppHost.csproj" />
+    <Project Path="examples/Aspire.Dashboard/DynamoDB.Aspire/DynamoDB.Client/DynamoDB.Client.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire.Dashboard/SSM.Aspire/">
+    <Project Path="examples/Aspire.Dashboard/SSM.Aspire/SSM.AppHost/SSM.AppHost.csproj" />
+    <Project Path="examples/Aspire.Dashboard/SSM.Aspire/SSM.Client/SSM.Client.csproj" />
+  </Folder>
+  <Folder Name="/examples/Aspire.Dashboard/ECS.Aspire/">
+    <Project Path="examples/Aspire.Dashboard/ECS.Aspire/ECS.AppHost/ECS.AppHost.csproj" />
+    <Project Path="examples/Aspire.Dashboard/ECS.Aspire/ECS.Sender/ECS.Sender.csproj" />
+    <Project Path="examples/Aspire.Dashboard/ECS.Aspire/ECS.Task/ECS.Task.csproj" />
+  </Folder>
+</Solution>

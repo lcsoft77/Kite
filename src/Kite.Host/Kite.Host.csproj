@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Exclude the Example sub-project from this compilation -->
+    <Compile Remove="Kite.Example\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kite.Core\Kite.Core.csproj" />
+    <ProjectReference Include="..\Kite.Lambda\Kite.Lambda.csproj" />
+    <ProjectReference Include="..\Kite.ApiGateway\Kite.ApiGateway.csproj" />
+    <ProjectReference Include="..\Kite.SQS\Kite.SQS.csproj" />
+    <ProjectReference Include="..\Kite.S3\Kite.S3.csproj" />
+    <ProjectReference Include="..\Kite.EventBridge\Kite.EventBridge.csproj" />
+    <ProjectReference Include="..\Kite.SSM\Kite.SSM.csproj" />
+    <ProjectReference Include="..\Kite.ECS\Kite.ECS.csproj" />
+    <ProjectReference Include="..\Kite.SNS\Kite.SNS.csproj" />
+    <ProjectReference Include="..\Kite.DynamoDB\Kite.DynamoDB.csproj" />
+  </ItemGroup>
+</Project>

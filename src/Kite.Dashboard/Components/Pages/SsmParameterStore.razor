@@ -1,0 +1,212 @@
+@page "/ssm"
+@implements IDisposable
+@inject IServiceRegistry Registry
+@inject IToastService Toast
+
+<PageTitle>SSM Parameter Store</PageTitle>
+
+<FluentLabel Typo="Typography.H3">🔑 SSM Parameter Store</FluentLabel>
+<FluentLabel Style="color: var(--neutral-foreground-hint);">@paramCount parameters</FluentLabel>
+<FluentDivider Style="margin: 12px 0;" />
+
+<FluentCard Style="padding: 16px; margin-bottom: 16px;">
+    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="margin-bottom: 12px;">
+        <FluentLabel Typo="Typography.H6" Style="flex: 1;">Parameters</FluentLabel>
+        <FluentButton Appearance="Appearance.Accent"
+                      OnClick="OpenAddDialog"
+                      IconStart="@(new Icons.Regular.Size16.Add())">
+            Add Parameter
+        </FluentButton>
+    </FluentStack>
+
+    @if (!parameters.Any())
+    {
+        <FluentLabel Style="color: var(--neutral-foreground-hint);">No parameters registered yet. Add one to get started.</FluentLabel>
+    }
+    else
+    {
+        <FluentDataGrid Items="@parameters.AsQueryable()" Style="width: 100%;">
+            <PropertyColumn Property="@(p => p.Name)" Title="Name" />
+            <PropertyColumn Property="@(p => p.Type)" Title="Type" />
+            <TemplateColumn Title="Value">
+                @if (context.Type == "SecureString")
+                {
+                    <span style="font-family: monospace; color: var(--neutral-foreground-hint);">••••••••</span>
+                }
+                else
+                {
+                    <span style="font-family: monospace; word-break: break-all;">@context.Value</span>
+                }
+            </TemplateColumn>
+            <PropertyColumn Property="@(p => p.Version)" Title="Version" />
+            <PropertyColumn Property="@(p => p.LastModifiedDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"))" Title="Last Modified" />
+            <TemplateColumn Title="Actions">
+                <FluentStack>
+                    <FluentButton Appearance="Appearance.Lightweight"
+                                  OnClick="@(() => OpenEditDialog(context))"
+                                  IconStart="@(new Icons.Regular.Size16.Edit())">
+                        Edit
+                    </FluentButton>
+                    <FluentButton Appearance="Appearance.Lightweight"
+                                  OnClick="@(() => DeleteParameter(context.Name))"
+                                  IconStart="@(new Icons.Regular.Size16.Delete())">
+                        Delete
+                    </FluentButton>
+                </FluentStack>
+            </TemplateColumn>
+        </FluentDataGrid>
+    }
+</FluentCard>
+
+@if (showDialog)
+{
+    <FluentDialog Hidden="false" HiddenChanged="@(_ => showDialog = false)" Modal="true" TrapFocus="true" Style="min-width: 480px;">
+        <FluentDialogHeader ShowDismiss="true">
+            <FluentLabel Typo="Typography.H6">@(isEditing ? "Edit Parameter" : "Add Parameter")</FluentLabel>
+        </FluentDialogHeader>
+        <FluentDialogBody>
+            <FluentStack Orientation="Orientation.Vertical" Style="gap: 12px;">
+                <FluentTextField @bind-Value="editName"
+                                 Label="Name"
+                                 Placeholder="/myapp/param-name"
+                                 Disabled="@isEditing"
+                                 Style="width: 100%;" />
+                <FluentSelect TOption="string"
+                              Label="Type"
+                              @bind-Value="editType"
+                              Style="width: 100%;">
+                    <FluentOption Value="String">String</FluentOption>
+                    <FluentOption Value="StringList">StringList</FluentOption>
+                    <FluentOption Value="SecureString">SecureString</FluentOption>
+                </FluentSelect>
+                <FluentTextArea @bind-Value="editValue"
+                                Label="Value"
+                                Rows="4"
+                                Style="width: 100%; font-family: monospace;"
+                                Placeholder="@(isEditing && editType == "SecureString" ? "Leave blank to keep the existing value" : "Parameter value")" />
+                @if (isEditing && editType == "SecureString")
+                {
+                    <FluentLabel Style="font-size: 12px; color: var(--neutral-foreground-hint);">SecureString value is not displayed for security reasons. Leave blank to keep the existing value.</FluentLabel>
+                }
+            </FluentStack>
+        </FluentDialogBody>
+        <FluentDialogFooter>
+            <FluentButton Appearance="Appearance.Accent" OnClick="SaveParameter">Save</FluentButton>
+            <FluentButton Appearance="Appearance.Lightweight" OnClick="CloseDialog">Cancel</FluentButton>
+        </FluentDialogFooter>
+    </FluentDialog>
+}
+
+@code {
+    private List<SsmParameter> parameters = new();
+    private int paramCount => parameters.Count;
+    private System.Threading.Timer? _timer;
+    private bool _disposed = false;
+
+    private bool showDialog = false;
+    private bool isEditing = false;
+    private string editName = string.Empty;
+    private string editValue = string.Empty;
+    private string editType = "String";
+
+    protected override void OnInitialized()
+    {
+        Refresh();
+        _timer = new System.Threading.Timer(_ =>
+        {
+            if (_disposed) return;
+            _ = InvokeAsync(() =>
+            {
+                if (_disposed) return;
+                Refresh();
+                StateHasChanged();
+            });
+        }, null, 2000, 2000);
+    }
+
+    private void Refresh()
+    {
+        parameters = Registry.GetAllSsmParameters().OrderBy(p => p.Name).ToList();
+    }
+
+    private void OpenAddDialog()
+    {
+        isEditing = false;
+        editName = string.Empty;
+        editValue = string.Empty;
+        editType = "String";
+        showDialog = true;
+    }
+
+    private void OpenEditDialog(SsmParameter param)
+    {
+        isEditing = true;
+        editName = param.Name;
+        // SecureString values are not shown in the editor for security reasons
+        editValue = param.Type == "SecureString" ? string.Empty : param.Value;
+        editType = param.Type;
+        showDialog = true;
+    }
+
+    private void SaveParameter()
+    {
+        if (string.IsNullOrWhiteSpace(editName))
+        {
+            Toast.ShowError("Parameter name is required.");
+            return;
+        }
+
+        if (!editName.StartsWith("/"))
+        {
+            Toast.ShowError("Parameter name must start with '/'.");
+            return;
+        }
+
+        var existing = Registry.GetSsmParameter(editName);
+
+        if (!isEditing && existing is not null)
+        {
+            Toast.ShowError($"Parameter '{editName}' already exists. Use Edit to update it.");
+            return;
+        }
+
+        // When editing a SecureString with a blank value, keep the existing value
+        var valueToSave = editValue;
+        if (isEditing && editType == "SecureString" && string.IsNullOrEmpty(editValue) && existing is not null)
+            valueToSave = existing.Value;
+
+        var version = existing is not null ? existing.Version + 1 : 1;
+
+        Registry.RegisterSsmParameter(new SsmParameter
+        {
+            Name = editName,
+            Value = valueToSave,
+            Type = editType,
+            Version = version,
+            LastModifiedDate = DateTime.UtcNow
+        });
+
+        Toast.ShowSuccess(isEditing ? $"Parameter '{editName}' updated." : $"Parameter '{editName}' added.");
+        CloseDialog();
+        Refresh();
+    }
+
+    private void DeleteParameter(string name)
+    {
+        Registry.DeleteSsmParameter(name);
+        Toast.ShowSuccess($"Parameter '{name}' deleted.");
+        Refresh();
+    }
+
+    private void CloseDialog()
+    {
+        showDialog = false;
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _timer?.Change(Timeout.Infinite, Timeout.Infinite);
+        _timer?.Dispose();
+    }
+}

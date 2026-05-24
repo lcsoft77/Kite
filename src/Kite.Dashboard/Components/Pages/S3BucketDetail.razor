@@ -1,0 +1,206 @@
+@page "/s3/{BucketName}"
+@implements IDisposable
+@inject IServiceRegistry Registry
+@inject IToastService Toast
+@inject IJSRuntime JS
+
+<PageTitle>S3: @BucketName</PageTitle>
+
+@if (bucket is null)
+{
+    <FluentLabel>Bucket "@BucketName" not found.</FluentLabel>
+    return;
+}
+
+<FluentLabel Typo="Typography.H3">🪣 @bucket.Name</FluentLabel>
+<FluentLabel Style="color: var(--neutral-foreground-hint);">@objectCount objects</FluentLabel>
+<FluentDivider Style="margin: 12px 0;" />
+
+<FluentTabs>
+    <FluentTab Label="📁 Objects">
+        <FluentCard Style="padding: 16px;">
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="margin-bottom: 12px;">
+                <FluentLabel Typo="Typography.H6" Style="flex: 1;">Bucket Objects</FluentLabel>
+                <InputFile id="fileUpload" OnChange="HandleFileUpload" style="display: none;" />
+                <FluentButton Appearance="Appearance.Accent"
+                              OnClick="TriggerFileUpload"
+                              IconStart="@(new Icons.Regular.Size16.ArrowUpload())">
+                    Upload File
+                </FluentButton>
+            </FluentStack>
+
+            @if (!objects.Any())
+            {
+                <FluentLabel Style="color: var(--neutral-foreground-hint);">No objects in this bucket.</FluentLabel>
+            }
+            else
+            {
+                <FluentDataGrid Items="@objects.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(o => o.Key)" Title="Key" />
+                    <PropertyColumn Property="@(o => o.ContentType)" Title="Content Type" />
+                    <TemplateColumn Title="Size">
+                        @FormatSize(context.Data.Length)
+                    </TemplateColumn>
+                    <PropertyColumn Property="@(o => o.LastModified.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"))" Title="Last Modified" />
+                    <TemplateColumn Title="Actions">
+                        <FluentStack>
+                            <FluentButton Appearance="Appearance.Lightweight"
+                                          OnClick="@(async () => await DownloadObject(context))"
+                                          IconStart="@(new Icons.Regular.Size16.ArrowDownload())">
+                                Download
+                            </FluentButton>
+                            <FluentButton Appearance="Appearance.Lightweight"
+                                          OnClick="@(() => DeleteObject(context.Key))"
+                                          IconStart="@(new Icons.Regular.Size16.Delete())">
+                                Delete
+                            </FluentButton>
+                        </FluentStack>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            }
+        </FluentCard>
+    </FluentTab>
+
+    <FluentTab Label="📋 Request Log">
+        <FluentCard Style="padding: 16px;">
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                <FluentLabel Typo="Typography.H6" Style="flex: 1;">Request History</FluentLabel>
+                <FluentButton Appearance="Appearance.Lightweight" OnClick="ClearLog" IconStart="@(new Icons.Regular.Size16.Delete())">
+                    Clear
+                </FluentButton>
+            </FluentStack>
+            <div style="height: 8px;;"></div>
+            @if (!requestLog.Any())
+            {
+                <FluentLabel Style="color: var(--neutral-foreground-hint);">No requests yet.</FluentLabel>
+            }
+            else
+            {
+                <FluentDataGrid Items="@requestLog.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(e => e.Timestamp.ToLocalTime().ToString("HH:mm:ss"))" Title="Time" />
+                    <PropertyColumn Property="@(e => e.Operation)" Title="Operation" />
+                    <PropertyColumn Property="@(e => e.Details)" Title="Details" />
+                    <TemplateColumn Title="Status">
+                        <FluentBadge Appearance="@(context.StatusCode < 400 ? Appearance.Accent : Appearance.Lightweight)">
+                            @context.StatusCode
+                        </FluentBadge>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            }
+        </FluentCard>
+    </FluentTab>
+</FluentTabs>
+
+@* Hidden download anchor rendered via JS *@
+<div id="downloadContainer"></div>
+
+@code {
+    [Parameter] public string BucketName { get; set; } = string.Empty;
+
+    private S3Bucket? bucket;
+    private List<S3Object> objects = new();
+    private List<RequestLogEntry> requestLog = new();
+    private int objectCount => objects.Count;
+    private System.Threading.Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        bucket = Registry.GetS3Bucket(Uri.UnescapeDataString(BucketName));
+        if (bucket is not null)
+        {
+            bucket.OnChange += OnBucketChanged;
+            RefreshData();
+        }
+        _timer = new System.Threading.Timer(_ => InvokeAsync(StateHasChanged), null, 1000, 1000);
+    }
+
+    private void OnBucketChanged()
+    {
+        _ = InvokeAsync(() =>
+        {
+            RefreshData();
+            StateHasChanged();
+        });
+    }
+
+    private void RefreshData()
+    {
+        if (bucket is null) return;
+        objects = bucket.Objects.Values.OrderBy(o => o.Key).ToList();
+        lock (bucket.RequestLog)
+            requestLog = bucket.RequestLog.AsEnumerable().Reverse().ToList();
+    }
+
+    private async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        if (bucket is null) return;
+        foreach (var file in e.GetMultipleFiles(10))
+        {
+            using var ms = new MemoryStream();
+            await file.OpenReadStream(maxAllowedSize: 100 * 1024 * 1024).CopyToAsync(ms);
+            var data = ms.ToArray();
+            var etag = $"\"{Convert.ToHexString(System.Security.Cryptography.MD5.HashData(data)).ToLowerInvariant()}\"";
+            bucket.Objects[file.Name] = new S3Object
+            {
+                Key = file.Name,
+                ContentType = file.ContentType,
+                Data = data,
+                LastModified = DateTime.UtcNow,
+                ETag = etag
+            };
+            LogHelpers.AddRequestLog(bucket.RequestLog, "PutObject (Dashboard)", $"s3://{bucket.Name}/{file.Name} ({data.Length} bytes)");
+            bucket.NotifyChange();
+            Toast.ShowSuccess($"Uploaded: {file.Name}");
+        }
+        RefreshData();
+    }
+
+    private void TriggerFileUpload()
+    {
+        _ = JS.InvokeVoidAsync("triggerFileUpload", "fileUpload");
+    }
+
+    private const long MaxDashboardDownloadBytes = 5 * 1024 * 1024; // 5 MB
+
+    private async Task DownloadObject(S3Object obj)
+    {
+        if (obj?.Data is null) return;
+        if (obj.Data.LongLength > MaxDashboardDownloadBytes)
+        {
+            Toast.ShowError($"'{obj.Key}' is too large to download from the dashboard (>{FormatSize(MaxDashboardDownloadBytes)}). Use an S3 client instead.");
+            return;
+        }
+        var base64 = Convert.ToBase64String(obj.Data);
+        await JS.InvokeVoidAsync("downloadBase64File", base64, obj.Key, obj.ContentType);
+    }
+
+    private void DeleteObject(string key)
+    {
+        if (bucket is null) return;
+        bucket.Objects.TryRemove(key, out _);
+        LogHelpers.AddRequestLog(bucket.RequestLog, "DeleteObject (Dashboard)", $"s3://{bucket.Name}/{key}", 204);
+        bucket.NotifyChange();
+        RefreshData();
+        Toast.ShowSuccess($"Deleted: {key}");
+    }
+
+    private void ClearLog()
+    {
+        if (bucket is null) return;
+        lock (bucket.RequestLog) bucket.RequestLog.Clear();
+        RefreshData();
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F2} MB";
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+        if (bucket is not null) bucket.OnChange -= OnBucketChanged;
+    }
+}

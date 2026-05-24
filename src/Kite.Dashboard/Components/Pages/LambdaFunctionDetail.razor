@@ -1,0 +1,234 @@
+@page "/lambda/{FunctionName}"
+@using Kite.Lambda.Execution
+@implements IDisposable
+@inject IServiceRegistry Registry
+@inject IToastService Toast
+
+<PageTitle>Lambda: @FunctionName</PageTitle>
+
+@if (function is null)
+{
+    <FluentLabel>Lambda function "@FunctionName" not found.</FluentLabel>
+    return;
+}
+
+<FluentLabel Typo="Typography.H3">λ @function.Name</FluentLabel>
+<FluentDivider Style="margin: 12px 0;" />
+
+<FluentGrid Spacing="3">
+    <FluentGridItem xs="12" sm="3">
+        <FluentCard Style="padding: 16px;">
+            <FluentLabel Style="font-size: 12px; color: var(--neutral-foreground-hint);">Handler</FluentLabel>
+            <FluentLabel Style="font-family: monospace; font-size: 13px;">@function.Handler</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="3">
+        <FluentCard Style="padding: 16px;">
+            <FluentLabel Style="font-size: 12px; color: var(--neutral-foreground-hint);">Memory</FluentLabel>
+            <FluentLabel>@function.MemoryMb MB</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="3">
+        <FluentCard Style="padding: 16px;">
+            <FluentLabel Style="font-size: 12px; color: var(--neutral-foreground-hint);">Timeout</FluentLabel>
+            <FluentLabel>@function.Timeout.TotalSeconds s</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="3">
+        <FluentCard Style="padding: 16px;">
+            <FluentLabel Style="font-size: 12px; color: var(--neutral-foreground-hint);">Invocations</FluentLabel>
+            <FluentLabel Typo="Typography.H4" Style="color: var(--accent-fill-rest);">@invocationCount</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+</FluentGrid>
+
+<div style="height: 16px;;"></div>
+
+<FluentTabs>
+    <FluentTab Label="▶️ Invoke">
+        <FluentCard Style="padding: 16px;">
+            <FluentLabel Typo="Typography.H6">Invoke Function</FluentLabel>
+            <div style="height: 8px;;"></div>
+            <FluentSelect TOption="string"
+                          Label="Load payload from file"
+                          Value="@selectedPayloadFile"
+                          ValueChanged="@OnPayloadFileSelected"
+                          Style="width: 100%; margin-bottom: 8px;">
+                <FluentOption Value="">-- Select payload file --</FluentOption>
+                @foreach (var file in payloadFiles)
+                {
+                    <FluentOption Value="@file">@Path.GetFileName(file)</FluentOption>
+                }
+            </FluentSelect>
+            <FluentTextArea @bind-Value="inputPayload"
+                            Label="Input Payload (JSON)"
+                            Rows="8"
+                            Style="width: 100%; font-family: monospace;"
+                            Placeholder="{}" />
+            <div style="height: 8px;;"></div>
+            <FluentStack>
+                <FluentButton Appearance="Appearance.Accent"
+                              OnClick="InvokeFunction"
+                              Disabled="@isInvoking"
+                              IconStart="@(new Icons.Regular.Size16.Play())">
+                    @(isInvoking ? "Invoking..." : "Invoke")
+                </FluentButton>
+                <FluentButton Appearance="Appearance.Lightweight" OnClick="SavePayload" IconStart="@(new Icons.Regular.Size16.Save())">
+                    Save as Payload File
+                </FluentButton>
+            </FluentStack>
+
+            @if (!string.IsNullOrEmpty(invocationResult))
+            {
+                <div style="height: 12px;;"></div>
+                <FluentLabel Typo="Typography.H6">Result:</FluentLabel>
+                <pre style="background: var(--neutral-fill-layer-rest); padding: 12px; border-radius: 4px; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto;">@invocationResult</pre>
+            }
+
+            @if (!string.IsNullOrEmpty(invocationError))
+            {
+                <div style="height: 12px;;"></div>
+                <FluentLabel Typo="Typography.H6" Style="color: var(--error);">Error:</FluentLabel>
+                <pre style="background: #fee; padding: 12px; border-radius: 4px; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; color: #c00;">@invocationError</pre>
+            }
+        </FluentCard>
+    </FluentTab>
+
+    <FluentTab Label="📋 Request Log">
+        <FluentCard Style="padding: 16px;">
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                <FluentLabel Typo="Typography.H6" Style="flex: 1;">Invocation History</FluentLabel>
+                <FluentButton Appearance="Appearance.Lightweight" OnClick="ClearLog" IconStart="@(new Icons.Regular.Size16.Delete())">
+                    Clear
+                </FluentButton>
+            </FluentStack>
+            <div style="height: 8px;;"></div>
+            @if (!requestLog.Any())
+            {
+                <FluentLabel Style="color: var(--neutral-foreground-hint);">No invocations yet.</FluentLabel>
+            }
+            else
+            {
+                <FluentDataGrid Items="@requestLog.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(e => e.Timestamp.ToLocalTime().ToString("HH:mm:ss"))" Title="Time" />
+                    <PropertyColumn Property="@(e => e.Operation)" Title="Operation" />
+                    <PropertyColumn Property="@(e => e.Details)" Title="Details" />
+                    <TemplateColumn Title="Status">
+                        <FluentBadge Appearance="@(context.StatusCode < 400 ? Appearance.Accent : Appearance.Lightweight)">
+                            @context.StatusCode
+                        </FluentBadge>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            }
+        </FluentCard>
+    </FluentTab>
+</FluentTabs>
+
+@code {
+    [Parameter] public string FunctionName { get; set; } = string.Empty;
+    [Inject] private LambdaExecutor Executor { get; set; } = default!;
+
+    private LambdaFunction? function;
+    private string inputPayload = "{}";
+    private string invocationResult = string.Empty;
+    private string invocationError = string.Empty;
+    private bool isInvoking = false;
+    private List<string> payloadFiles = new();
+    private string selectedPayloadFile = string.Empty;
+    private List<RequestLogEntry> requestLog = new();
+    private int invocationCount => requestLog.Count;
+    private System.Threading.Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        function = Registry.GetLambda(Uri.UnescapeDataString(FunctionName));
+        if (function is not null)
+        {
+            function.OnChange += OnFunctionChanged;
+            RefreshData();
+        }
+        payloadFiles = PayloadHelper.GetPayloadFiles("lambda");
+        _timer = new System.Threading.Timer(_ => InvokeAsync(StateHasChanged), null, 1000, 1000);
+    }
+
+    private void OnFunctionChanged()
+    {
+        _ = InvokeAsync(() =>
+        {
+            RefreshData();
+            StateHasChanged();
+        });
+    }
+
+    private void RefreshData()
+    {
+        if (function is null) return;
+        lock (function.RequestLog)
+            requestLog = function.RequestLog.AsEnumerable().Reverse().ToList();
+    }
+
+    private async Task OnPayloadFileSelected(string? file)
+    {
+        selectedPayloadFile = file ?? string.Empty;
+        if (string.IsNullOrEmpty(file) || payloadFiles is null || payloadFiles.Count == 0)
+            return;
+        var matchedFile = payloadFiles.FirstOrDefault(f => string.Equals(f, file, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrEmpty(matchedFile) && File.Exists(matchedFile))
+            inputPayload = await File.ReadAllTextAsync(matchedFile);
+    }
+
+    private async Task InvokeFunction()
+    {
+        if (function is null || isInvoking) return;
+        isInvoking = true;
+        invocationResult = string.Empty;
+        invocationError = string.Empty;
+        StateHasChanged();
+        try
+        {
+            var result = await Executor.InvokeAsync(function.Name, inputPayload);
+            invocationResult = FormatJson(result);
+            Toast.ShowSuccess($"{function.Name} invoked successfully.");
+        }
+        catch (Exception ex)
+        {
+            invocationError = ex.Message;
+            Toast.ShowError($"Invocation failed: {ex.Message}");
+        }
+        finally
+        {
+            isInvoking = false;
+            RefreshData();
+        }
+    }
+
+    private async Task SavePayload()
+    {
+        await PayloadHelper.SavePayloadAsync("lambda", inputPayload);
+        payloadFiles = PayloadHelper.GetPayloadFiles("lambda");
+        Toast.ShowSuccess("Payload saved.");
+    }
+
+    private void ClearLog()
+    {
+        if (function is null) return;
+        lock (function.RequestLog) function.RequestLog.Clear();
+        RefreshData();
+    }
+
+    private static string FormatJson(string json)
+    {
+        try
+        {
+            var doc = System.Text.Json.JsonDocument.Parse(json);
+            return System.Text.Json.JsonSerializer.Serialize(doc, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        }
+        catch { return json; }
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+        if (function is not null) function.OnChange -= OnFunctionChanged;
+    }
+}

@@ -1,0 +1,215 @@
+@page "/sns/{TopicName}"
+@implements IDisposable
+@inject IServiceRegistry Registry
+@inject IToastService Toast
+
+<PageTitle>SNS: @TopicName</PageTitle>
+
+@if (topic is null)
+{
+    <FluentLabel>Topic "@TopicName" not found.</FluentLabel>
+    return;
+}
+
+<FluentLabel Typo="Typography.H3">📣 @topic.Name</FluentLabel>
+<FluentLabel Style="color: var(--neutral-foreground-hint);">@topic.TopicArn</FluentLabel>
+<FluentDivider Style="margin: 12px 0;" />
+
+<FluentGrid Spacing="3">
+    <FluentGridItem xs="12" sm="4">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H2" Style="color: var(--accent-fill-rest);">@topic.Subscriptions.Count</FluentLabel>
+            <FluentLabel>Subscriptions</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="4">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H2" Style="color: var(--accent-fill-rest);">@publishedMessages.Count</FluentLabel>
+            <FluentLabel>Total Published</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+</FluentGrid>
+
+<div style="height: 16px;"></div>
+
+<FluentTabs>
+    <FluentTab Label="📨 Publish Message">
+        <FluentCard Style="padding: 16px;">
+            <FluentLabel Typo="Typography.H6">Publish a Message</FluentLabel>
+            <div style="height: 8px;"></div>
+            <FluentTextField @bind-Value="messageSubject"
+                             Label="Subject (optional)"
+                             Style="width: 100%; margin-bottom: 8px;" />
+            <FluentTextArea @bind-Value="messageBody"
+                            Label="Message"
+                            Rows="6"
+                            Style="width: 100%; font-family: monospace;"
+                            Placeholder="{}" />
+            <div style="height: 8px;"></div>
+            <FluentButton Appearance="Appearance.Accent" OnClick="PublishMessage" IconStart="@(new Icons.Regular.Size16.Send())">
+                Publish
+            </FluentButton>
+        </FluentCard>
+    </FluentTab>
+
+    <FluentTab Label="⏱️ Published Messages">
+        <FluentCard Style="padding: 16px;">
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                <FluentLabel Typo="Typography.H6" Style="flex: 1;">Recent Messages</FluentLabel>
+                <FluentButton Appearance="Appearance.Lightweight" OnClick="ClearPublishedMessages" IconStart="@(new Icons.Regular.Size16.Delete())">
+                    Clear
+                </FluentButton>
+            </FluentStack>
+            <div style="height: 8px;"></div>
+            @if (!publishedMessages.Any())
+            {
+                <FluentLabel Style="color: var(--neutral-foreground-hint);">No messages published yet.</FluentLabel>
+            }
+            else
+            {
+                @foreach (var msg in publishedMessages)
+                {
+                    <FluentCard Style="margin-bottom: 8px; padding: 10px; background: var(--neutral-fill-layer-rest);">
+                        <FluentStack Orientation="Orientation.Horizontal">
+                            <FluentLabel Style="font-size: 11px; color: var(--neutral-foreground-hint); min-width: 160px;">@msg.Timestamp.ToLocalTime().ToString("HH:mm:ss.fff")</FluentLabel>
+                            <FluentLabel Style="font-size: 11px; color: var(--neutral-foreground-hint); min-width: 180px;">ID: @msg.MessageId[..8]...</FluentLabel>
+                            <FluentLabel Style="font-size: 11px; color: var(--neutral-foreground-hint);">@msg.Source</FluentLabel>
+                        </FluentStack>
+                        <pre style="margin: 4px 0 0 0; font-size: 12px; white-space: pre-wrap; word-break: break-all;">@FormatJson(msg.Body)</pre>
+                    </FluentCard>
+                }
+            }
+        </FluentCard>
+    </FluentTab>
+
+    <FluentTab Label="🔔 Subscriptions">
+        <FluentCard Style="padding: 16px;">
+            <FluentLabel Typo="Typography.H6">Active Subscriptions</FluentLabel>
+            <div style="height: 8px;"></div>
+            @if (!subscriptions.Any())
+            {
+                <FluentLabel Style="color: var(--neutral-foreground-hint);">No subscriptions yet.</FluentLabel>
+            }
+            else
+            {
+                <FluentDataGrid Items="@subscriptions.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(s => s.Protocol)" Title="Protocol" />
+                    <PropertyColumn Property="@(s => s.Endpoint)" Title="Endpoint" />
+                    <PropertyColumn Property="@(s => s.SubscriptionArn)" Title="Subscription ARN" />
+                </FluentDataGrid>
+            }
+        </FluentCard>
+    </FluentTab>
+
+    <FluentTab Label="📋 Request Log">
+        <FluentCard Style="padding: 16px;">
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                <FluentLabel Typo="Typography.H6" Style="flex: 1;">Request History</FluentLabel>
+                <FluentButton Appearance="Appearance.Lightweight" OnClick="ClearLog" IconStart="@(new Icons.Regular.Size16.Delete())">
+                    Clear
+                </FluentButton>
+            </FluentStack>
+            <div style="height: 8px;"></div>
+            @if (!requestLog.Any())
+            {
+                <FluentLabel Style="color: var(--neutral-foreground-hint);">No requests yet.</FluentLabel>
+            }
+            else
+            {
+                <FluentDataGrid Items="@requestLog.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(e => e.Timestamp.ToLocalTime().ToString("HH:mm:ss"))" Title="Time" />
+                    <PropertyColumn Property="@(e => e.Operation)" Title="Operation" />
+                    <PropertyColumn Property="@(e => e.Details)" Title="Details" />
+                    <TemplateColumn Title="Status">
+                        <FluentBadge Appearance="@(context.StatusCode < 400 ? Appearance.Accent : Appearance.Lightweight)">
+                            @context.StatusCode
+                        </FluentBadge>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            }
+        </FluentCard>
+    </FluentTab>
+</FluentTabs>
+
+@code {
+    [Parameter] public string TopicName { get; set; } = string.Empty;
+
+    private SnsTopic? topic;
+    private string messageBody = "{}";
+    private string messageSubject = string.Empty;
+    private List<SentMessageEntry> publishedMessages = new();
+    private List<RequestLogEntry> requestLog = new();
+    private List<SnsSubscription> subscriptions = new();
+    private System.Threading.Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        topic = Registry.GetSnsTopic(Uri.UnescapeDataString(TopicName));
+        if (topic is not null)
+        {
+            topic.OnChange += OnTopicChanged;
+            RefreshData();
+        }
+        _timer = new System.Threading.Timer(_ => InvokeAsync(StateHasChanged), null, 1000, 1000);
+    }
+
+    private void OnTopicChanged()
+    {
+        _ = InvokeAsync(() =>
+        {
+            RefreshData();
+            StateHasChanged();
+        });
+    }
+
+    private void RefreshData()
+    {
+        if (topic is null) return;
+        lock (topic.PublishedMessages)
+            publishedMessages = topic.PublishedMessages.AsEnumerable().Reverse().ToList();
+        lock (topic.RequestLog)
+            requestLog = topic.RequestLog.AsEnumerable().Reverse().ToList();
+        lock (topic.Subscriptions)
+            subscriptions = topic.Subscriptions.ToList();
+    }
+
+    private void PublishMessage()
+    {
+        if (topic is null) return;
+        var messageId = Guid.NewGuid().ToString();
+        LogHelpers.AddSentMessage(topic.PublishedMessages, messageId, messageBody, "Dashboard");
+        LogHelpers.AddRequestLog(topic.RequestLog, "Publish (Dashboard)", $"MessageId={messageId} Subject={messageSubject}");
+        topic.NotifyChange();
+        Toast.ShowSuccess($"Message published to {topic.Name}");
+    }
+
+    private void ClearPublishedMessages()
+    {
+        if (topic is null) return;
+        lock (topic.PublishedMessages) topic.PublishedMessages.Clear();
+        RefreshData();
+    }
+
+    private void ClearLog()
+    {
+        if (topic is null) return;
+        lock (topic.RequestLog) topic.RequestLog.Clear();
+        RefreshData();
+    }
+
+    private static string FormatJson(string json)
+    {
+        try
+        {
+            var doc = System.Text.Json.JsonDocument.Parse(json);
+            return System.Text.Json.JsonSerializer.Serialize(doc, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        }
+        catch { return json; }
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+        if (topic is not null) topic.OnChange -= OnTopicChanged;
+    }
+}

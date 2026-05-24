@@ -1,0 +1,276 @@
+@page "/eventbridge/{BusName}"
+@using Kite.EventBridge
+@implements IDisposable
+@inject IServiceRegistry Registry
+@inject IToastService Toast
+@inject EventBridgeService EventBridgeSvc
+
+<PageTitle>EventBridge: @BusName</PageTitle>
+
+@if (bus is null)
+{
+    <FluentLabel>Event bus "@BusName" not found.</FluentLabel>
+    return;
+}
+
+<FluentLabel Typo="Typography.H3">⚡ @bus.Name</FluentLabel>
+<FluentLabel Style="color: var(--neutral-foreground-hint);">@bus.Rules.Count rules configured</FluentLabel>
+<FluentDivider Style="margin: 12px 0;" />
+
+<FluentGrid Spacing="3">
+    <FluentGridItem xs="12" sm="4">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H2" Style="color: var(--accent-fill-rest);">@bus.Rules.Count</FluentLabel>
+            <FluentLabel>Rules</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="4">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H2" Style="color: var(--accent-fill-rest);">@totalTargets</FluentLabel>
+            <FluentLabel>Targets</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="4">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H2" Style="color: var(--accent-fill-rest);">@sentEvents.Count</FluentLabel>
+            <FluentLabel>Events Sent</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+</FluentGrid>
+
+<div style="height: 16px;;"></div>
+
+<FluentTabs>
+    <FluentTab Label="📤 Send Event">
+        <FluentCard Style="padding: 16px;">
+            <FluentLabel Typo="Typography.H6">Publish Event</FluentLabel>
+            <div style="height: 8px;;"></div>
+            <FluentGrid Spacing="2">
+                <FluentGridItem xs="12" sm="6">
+                    <FluentTextField @bind-Value="eventSource" Label="Source" Style="width: 100%;" Placeholder="com.example.app" />
+                </FluentGridItem>
+                <FluentGridItem xs="12" sm="6">
+                    <FluentTextField @bind-Value="detailType" Label="Detail Type" Style="width: 100%;" Placeholder="OrderPlaced" />
+                </FluentGridItem>
+            </FluentGrid>
+            <div style="height: 8px;;"></div>
+            <FluentSelect TOption="string"
+                          Label="Load payload from file"
+                          Value="@selectedPayloadFile"
+                          ValueChanged="@OnPayloadFileSelected"
+                          Style="width: 100%; margin-bottom: 8px;">
+                <FluentOption Value="">-- Select payload file --</FluentOption>
+                @foreach (var file in payloadFiles)
+                {
+                    <FluentOption Value="@file">@Path.GetFileName(file)</FluentOption>
+                }
+            </FluentSelect>
+            <FluentTextArea @bind-Value="eventDetail"
+                            Label="Detail (JSON)"
+                            Rows="6"
+                            Style="width: 100%; font-family: monospace;"
+                            Placeholder="{}" />
+            <div style="height: 8px;;"></div>
+            <FluentStack>
+                <FluentButton Appearance="Appearance.Accent" OnClick="PublishEvent" IconStart="@(new Icons.Regular.Size16.Send())">
+                    Publish
+                </FluentButton>
+                <FluentButton Appearance="Appearance.Lightweight" OnClick="SavePayload" IconStart="@(new Icons.Regular.Size16.Save())">
+                    Save as Payload File
+                </FluentButton>
+            </FluentStack>
+        </FluentCard>
+    </FluentTab>
+
+    <FluentTab Label="🔧 Rules">
+        <FluentCard Style="padding: 16px;">
+            <FluentLabel Typo="Typography.H6">Configured Rules</FluentLabel>
+            <div style="height: 8px;;"></div>
+            @if (!bus.Rules.Any())
+            {
+                <FluentLabel Style="color: var(--neutral-foreground-hint);">No rules configured.</FluentLabel>
+            }
+            else
+            {
+                @foreach (var rule in bus.Rules)
+                {
+                    <FluentCard Style="margin-bottom: 8px; padding: 12px; background: var(--neutral-fill-layer-rest);">
+                        <FluentLabel Typo="Typography.H6">@rule.Name</FluentLabel>
+                        <FluentLabel Style="font-size: 12px; color: var(--neutral-foreground-hint);">
+                            Source: @(rule.EventPattern.Source is { Length: > 0 } ? string.Join(", ", rule.EventPattern.Source) : "*")
+                            | Type: @(rule.EventPattern.DetailType is { Length: > 0 } ? string.Join(", ", rule.EventPattern.DetailType) : "*")
+                        </FluentLabel>
+                        @if (rule.Targets.Any())
+                        {
+                            <FluentLabel Style="font-size: 12px;">Targets: @string.Join(", ", rule.Targets.Select(t => t.LambdaFunctionName))</FluentLabel>
+                        }
+                    </FluentCard>
+                }
+            }
+        </FluentCard>
+    </FluentTab>
+
+    <FluentTab Label="⏱️ Real-time Events">
+        <FluentCard Style="padding: 16px;">
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                <FluentLabel Typo="Typography.H6" Style="flex: 1;">Recent Events</FluentLabel>
+                <FluentButton Appearance="Appearance.Lightweight" OnClick="ClearEvents" IconStart="@(new Icons.Regular.Size16.Delete())">
+                    Clear
+                </FluentButton>
+            </FluentStack>
+            <div style="height: 8px;;"></div>
+            @if (!sentEvents.Any())
+            {
+                <FluentLabel Style="color: var(--neutral-foreground-hint);">No events yet.</FluentLabel>
+            }
+            else
+            {
+                @foreach (var evt in sentEvents)
+                {
+                    <FluentCard Style="margin-bottom: 8px; padding: 10px; background: var(--neutral-fill-layer-rest);">
+                        <FluentStack Orientation="Orientation.Horizontal">
+                            <FluentLabel Style="font-size: 11px; color: var(--neutral-foreground-hint); min-width: 160px;">@evt.Timestamp.ToLocalTime().ToString("HH:mm:ss.fff")</FluentLabel>
+                            <FluentLabel Style="font-size: 11px; color: var(--accent-fill-rest); min-width: 200px;">Source: @evt.Source</FluentLabel>
+                        </FluentStack>
+                        <pre style="margin: 4px 0 0 0; font-size: 12px; white-space: pre-wrap; word-break: break-all;">@FormatJson(evt.Body)</pre>
+                    </FluentCard>
+                }
+            }
+        </FluentCard>
+    </FluentTab>
+
+    <FluentTab Label="📋 Request Log">
+        <FluentCard Style="padding: 16px;">
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                <FluentLabel Typo="Typography.H6" Style="flex: 1;">Request History</FluentLabel>
+                <FluentButton Appearance="Appearance.Lightweight" OnClick="ClearLog" IconStart="@(new Icons.Regular.Size16.Delete())">
+                    Clear
+                </FluentButton>
+            </FluentStack>
+            <div style="height: 8px;;"></div>
+            @if (!requestLog.Any())
+            {
+                <FluentLabel Style="color: var(--neutral-foreground-hint);">No requests yet.</FluentLabel>
+            }
+            else
+            {
+                <FluentDataGrid Items="@requestLog.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(e => e.Timestamp.ToLocalTime().ToString("HH:mm:ss"))" Title="Time" />
+                    <PropertyColumn Property="@(e => e.Operation)" Title="Operation" />
+                    <PropertyColumn Property="@(e => e.Details)" Title="Details" />
+                    <TemplateColumn Title="Status">
+                        <FluentBadge Appearance="@(context.StatusCode < 400 ? Appearance.Accent : Appearance.Lightweight)">
+                            @context.StatusCode
+                        </FluentBadge>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            }
+        </FluentCard>
+    </FluentTab>
+</FluentTabs>
+
+@code {
+    [Parameter] public string BusName { get; set; } = string.Empty;
+
+    private EventBridgeBus? bus;
+    private string eventSource = string.Empty;
+    private string detailType = string.Empty;
+    private string eventDetail = "{}";
+    private List<string> payloadFiles = new();
+    private string selectedPayloadFile = string.Empty;
+    private List<SentMessageEntry> sentEvents = new();
+    private List<RequestLogEntry> requestLog = new();
+    private int totalTargets => bus?.Rules.Sum(r => r.Targets.Count) ?? 0;
+    private System.Threading.Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        bus = Registry.GetEventBridgeBus(Uri.UnescapeDataString(BusName));
+        if (bus is not null)
+        {
+            bus.OnChange += OnBusChanged;
+            RefreshData();
+        }
+        payloadFiles = PayloadHelper.GetPayloadFiles("eventbridge");
+        _timer = new System.Threading.Timer(_ => InvokeAsync(StateHasChanged), null, 1000, 1000);
+    }
+
+    private void OnBusChanged()
+    {
+        _ = InvokeAsync(() =>
+        {
+            RefreshData();
+            StateHasChanged();
+        });
+    }
+
+    private void RefreshData()
+    {
+        if (bus is null) return;
+        lock (bus.SentMessages)
+            sentEvents = bus.SentMessages.AsEnumerable().Reverse().ToList();
+        lock (bus.RequestLog)
+            requestLog = bus.RequestLog.AsEnumerable().Reverse().ToList();
+    }
+
+    private async Task OnPayloadFileSelected(string? file)
+    {
+        selectedPayloadFile = file ?? string.Empty;
+        if (string.IsNullOrEmpty(file) || payloadFiles is null || payloadFiles.Count == 0)
+            return;
+        var matchedFile = payloadFiles.FirstOrDefault(f => string.Equals(f, file, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrEmpty(matchedFile) && File.Exists(matchedFile))
+            eventDetail = await File.ReadAllTextAsync(matchedFile);
+    }
+
+    private async Task PublishEvent()
+    {
+        if (bus is null) return;
+        try
+        {
+            var eventId = await EventBridgeSvc.PutEventAsync(bus.Name, eventSource, detailType, eventDetail);
+            Toast.ShowSuccess($"Event published to {bus.Name} (id={eventId})");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to publish event: {ex.Message}");
+        }
+    }
+
+    private async Task SavePayload()
+    {
+        await PayloadHelper.SavePayloadAsync("eventbridge", eventDetail);
+        payloadFiles = PayloadHelper.GetPayloadFiles("eventbridge");
+        Toast.ShowSuccess("Payload saved.");
+    }
+
+    private void ClearEvents()
+    {
+        if (bus is null) return;
+        lock (bus.SentMessages) bus.SentMessages.Clear();
+        RefreshData();
+    }
+
+    private void ClearLog()
+    {
+        if (bus is null) return;
+        lock (bus.RequestLog) bus.RequestLog.Clear();
+        RefreshData();
+    }
+
+    private static string FormatJson(string json)
+    {
+        try
+        {
+            var doc = System.Text.Json.JsonDocument.Parse(json);
+            return System.Text.Json.JsonSerializer.Serialize(doc, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        }
+        catch { return json; }
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+        if (bus is not null) bus.OnChange -= OnBusChanged;
+    }
+}

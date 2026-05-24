@@ -1,0 +1,276 @@
+@page "/"
+@inject IServiceRegistry Registry
+
+<PageTitle>Kite Dashboard</PageTitle>
+    
+<FluentLabel Typo="Typography.H3">Dashboard Overview</FluentLabel>
+<FluentDivider Style="margin: 12px 0;" />
+
+<FluentGrid Spacing="3">
+    <FluentGridItem xs="12" sm="6" lg="3">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H1" Style="color: var(--accent-fill-rest);">@sqsCount</FluentLabel>
+            <FluentLabel>SQS Queues</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" lg="3">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H1" Style="color: var(--accent-fill-rest);">@s3Count</FluentLabel>
+            <FluentLabel>S3 Buckets</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" lg="3">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H1" Style="color: var(--accent-fill-rest);">@ebCount</FluentLabel>
+            <FluentLabel>EventBridge Buses</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" lg="3">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H1" Style="color: var(--accent-fill-rest);">@lambdaCount</FluentLabel>
+            <FluentLabel>Lambda Functions</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" lg="3">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H1" Style="color: var(--accent-fill-rest);">@ecsCount</FluentLabel>
+            <FluentLabel>ECS Clusters</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" lg="3">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H1" Style="color: var(--accent-fill-rest);">@snsCount</FluentLabel>
+            <FluentLabel>SNS Topics</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" lg="3">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H1" Style="color: var(--accent-fill-rest);">@ssmCount</FluentLabel>
+            <FluentLabel>SSM Parameters</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" lg="3">
+        <FluentCard Style="padding: 16px; text-align: center;">
+            <FluentLabel Typo="Typography.H1" Style="color: var(--accent-fill-rest);">@dynamoDbCount</FluentLabel>
+            <FluentLabel>DynamoDB Tables</FluentLabel>
+        </FluentCard>
+    </FluentGridItem>
+</FluentGrid>
+
+<div style="height: 24px;;"></div>
+
+<FluentGrid Spacing="3">
+    @if (sqsCount > 0)
+    {
+        <FluentGridItem xs="12" lg="6">
+            <FluentCard>
+                <FluentLabel Typo="Typography.H5" Style="padding: 12px 16px; display: block;">
+                    📬 SQS Queues
+                </FluentLabel>
+                <FluentDivider />
+                <FluentDataGrid Items="@sqsQueues.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(q => q.Name)" Title="Queue Name" />
+                    <PropertyColumn Property="@(q => q.Messages.Count)" Title="Messages" />
+                    <TemplateColumn Title="Actions">
+                        <FluentButton Appearance="Appearance.Lightweight"
+                                      OnClick="@(() => Nav.NavigateTo($"/sqs/{Uri.EscapeDataString(context.Name)}"))">
+                            Open
+                        </FluentButton>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            </FluentCard>
+        </FluentGridItem>
+    }
+
+    @if (s3Count > 0)
+    {
+        <FluentGridItem xs="12" lg="6">
+            <FluentCard>
+                <FluentLabel Typo="Typography.H5" Style="padding: 12px 16px; display: block;">
+                    🪣 S3 Buckets
+                </FluentLabel>
+                <FluentDivider />
+                <FluentDataGrid Items="@s3Buckets.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(b => b.Name)" Title="Bucket Name" />
+                    <PropertyColumn Property="@(b => b.Objects.Count)" Title="Objects" />
+                    <TemplateColumn Title="Actions">
+                        <FluentButton Appearance="Appearance.Lightweight"
+                                      OnClick="@(() => Nav.NavigateTo($"/s3/{Uri.EscapeDataString(context.Name)}"))">
+                            Open
+                        </FluentButton>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            </FluentCard>
+        </FluentGridItem>
+    }
+
+    @if (ebCount > 0)
+    {
+        <FluentGridItem xs="12" lg="6">
+            <FluentCard>
+                <FluentLabel Typo="Typography.H5" Style="padding: 12px 16px; display: block;">
+                    ⚡ EventBridge Buses
+                </FluentLabel>
+                <FluentDivider />
+                <FluentDataGrid Items="@eventBuses.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(b => b.Name)" Title="Bus Name" />
+                    <PropertyColumn Property="@(b => b.Rules.Count)" Title="Rules" />
+                    <TemplateColumn Title="Actions">
+                        <FluentButton Appearance="Appearance.Lightweight"
+                                      OnClick="@(() => Nav.NavigateTo($"/eventbridge/{Uri.EscapeDataString(context.Name)}"))">
+                            Open
+                        </FluentButton>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            </FluentCard>
+        </FluentGridItem>
+    }
+
+    @if (lambdaCount > 0)
+    {
+        <FluentGridItem xs="12" lg="6">
+            <FluentCard>
+                <FluentLabel Typo="Typography.H5" Style="padding: 12px 16px; display: block;">
+                    λ Lambda Functions
+                </FluentLabel>
+                <FluentDivider />
+                <FluentDataGrid Items="@lambdaFunctions.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(f => f.Name)" Title="Function Name" />
+                    <PropertyColumn Property="@(f => f.Handler)" Title="Handler" />
+                    <TemplateColumn Title="Actions">
+                        <FluentButton Appearance="Appearance.Lightweight"
+                                      OnClick="@(() => Nav.NavigateTo($"/lambda/{Uri.EscapeDataString(context.Name)}"))">
+                            Open
+                        </FluentButton>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            </FluentCard>
+        </FluentGridItem>
+    }
+
+    @if (ecsCount > 0)
+    {
+        <FluentGridItem xs="12" lg="6">
+            <FluentCard>
+                <FluentLabel Typo="Typography.H5" Style="padding: 12px 16px; display: block;">
+                    🐳 ECS Clusters
+                </FluentLabel>
+                <FluentDivider />
+                <FluentDataGrid Items="@ecsClusters.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(c => c.Name)" Title="Cluster Name" />
+                    <PropertyColumn Property="@(c => c.Status)" Title="Status" />
+                    <TemplateColumn Title="Actions">
+                        <FluentButton Appearance="Appearance.Lightweight"
+                                      OnClick="@(() => Nav.NavigateTo($"/ecs/{Uri.EscapeDataString(context.Name)}"))">
+                            Open
+                        </FluentButton>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            </FluentCard>
+        </FluentGridItem>
+    }
+
+    @if (snsCount > 0)
+    {
+        <FluentGridItem xs="12" lg="6">
+            <FluentCard>
+                <FluentLabel Typo="Typography.H5" Style="padding: 12px 16px; display: block;">
+                    📣 SNS Topics
+                </FluentLabel>
+                <FluentDivider />
+                <FluentDataGrid Items="@snsTopics.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(t => t.Name)" Title="Topic Name" />
+                    <PropertyColumn Property="@(t => t.Subscriptions.Count)" Title="Subscriptions" />
+                    <TemplateColumn Title="Actions">
+                        <FluentButton Appearance="Appearance.Lightweight"
+                                      OnClick="@(() => Nav.NavigateTo($"/sns/{Uri.EscapeDataString(context.Name)}"))">
+                            Open
+                        </FluentButton>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            </FluentCard>
+        </FluentGridItem>
+    }
+
+    @if (ssmCount > 0)
+    {
+        <FluentGridItem xs="12" lg="6">
+            <FluentCard>
+                <FluentLabel Typo="Typography.H5" Style="padding: 12px 16px; display: block;">
+                    🔑 SSM Parameters
+                </FluentLabel>
+                <FluentDivider />
+                <FluentDataGrid Items="@ssmParameters.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(p => p.Name)" Title="Name" />
+                    <PropertyColumn Property="@(p => p.Type)" Title="Type" />
+                    <PropertyColumn Property="@(p => p.Version)" Title="Version" />
+                    <TemplateColumn Title="Actions">
+                        <FluentButton Appearance="Appearance.Lightweight"
+                                      OnClick="@(() => Nav.NavigateTo("/ssm"))">
+                            Open
+                        </FluentButton>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            </FluentCard>
+        </FluentGridItem>
+    }
+
+    @if (dynamoDbCount > 0)
+    {
+        <FluentGridItem xs="12" lg="6">
+            <FluentCard>
+                <FluentLabel Typo="Typography.H5" Style="padding: 12px 16px; display: block;">
+                    🗄️ DynamoDB Tables
+                </FluentLabel>
+                <FluentDivider />
+                <FluentDataGrid Items="@dynamoDbTables.AsQueryable()" Style="width: 100%;">
+                    <PropertyColumn Property="@(t => t.TableName)" Title="Table Name" />
+                    <PropertyColumn Property="@(t => t.PartitionKeyName)" Title="Partition Key" />
+                    <TemplateColumn Title="Items">
+                        @context.ItemCount()
+                    </TemplateColumn>
+                    <TemplateColumn Title="Actions">
+                        <FluentButton Appearance="Appearance.Lightweight"
+                                      OnClick="@(() => Nav.NavigateTo($"/dynamodb/{Uri.EscapeDataString(context.TableName)}"))">
+                            Open
+                        </FluentButton>
+                    </TemplateColumn>
+                </FluentDataGrid>
+            </FluentCard>
+        </FluentGridItem>
+    }
+</FluentGrid>
+
+@code {
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+
+    private List<SqsQueue> sqsQueues = new();
+    private List<S3Bucket> s3Buckets = new();
+    private List<EventBridgeBus> eventBuses = new();
+    private List<LambdaFunction> lambdaFunctions = new();
+    private List<EcsCluster> ecsClusters = new();
+    private List<SnsTopic> snsTopics = new();
+    private List<SsmParameter> ssmParameters = new();
+    private List<DynamoDbTable> dynamoDbTables = new();
+
+    private int sqsCount => sqsQueues.Count;
+    private int s3Count => s3Buckets.Count;
+    private int ebCount => eventBuses.Count;
+    private int lambdaCount => lambdaFunctions.Count;
+    private int ecsCount => ecsClusters.Count;
+    private int snsCount => snsTopics.Count;
+    private int ssmCount => ssmParameters.Count;
+    private int dynamoDbCount => dynamoDbTables.Count;
+
+    protected override void OnInitialized()
+    {
+        sqsQueues = Registry.GetAllSqsQueues().ToList();
+        s3Buckets = Registry.GetAllS3Buckets().ToList();
+        eventBuses = Registry.GetAllEventBridgeBuses().ToList();
+        lambdaFunctions = Registry.GetAllLambdas().ToList();
+        ecsClusters = Registry.GetAllEcsClusters().ToList();
+        snsTopics = Registry.GetAllSnsTopics().ToList();
+        ssmParameters = Registry.GetAllSsmParameters().OrderBy(p => p.Name).ToList();
+        dynamoDbTables = Registry.GetAllDynamoDbTables().ToList();
+    }
+}
