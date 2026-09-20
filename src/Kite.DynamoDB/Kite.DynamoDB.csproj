@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>Amazon DynamoDB emulation (tables, items, query and scan) for Kite, an AWS cloud emulator for .NET.</Description>
+    <PackageTags>$(PackageTags);dynamodb;nosql</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

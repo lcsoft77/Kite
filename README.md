@@ -12,6 +12,23 @@ An open-source AWS cloud emulator written in C# for .NET 10, similar to [LocalSt
 - **Event-Driven Triggers** — SQS → Lambda, S3 → Lambda, EventBridge → Lambda, API Gateway → Lambda
 - **Fluent Builder API** — Simple configuration through a fluent builder pattern
 
+## 📦 Installation
+
+Kite builds as a set of NuGet packages. Most applications need only one of them:
+
+```bash
+# Standalone emulator
+dotnet add package Kite.Host
+
+# Inside a .NET Aspire AppHost
+dotnet add package Kite.Aspire
+```
+
+> **Note:** the packages are not on nuget.org yet. Until the first release is tagged,
+> build them locally with `dotnet pack Kite.slnx --configuration Release --output ./artifacts`
+> and add `./artifacts` as a local package source. See [Packaging](docs/Packaging.md)
+> for the full package list and the release process.
+
 ## 🚀 Quick Start
 
 ```csharp
@@ -67,6 +84,7 @@ Full documentation is available in the [Wiki](../../wiki):
 - [Lambda](../../wiki/Lambda) · [SQS](../../wiki/SQS) · [S3](../../wiki/S3) · [DynamoDB](../../wiki/DynamoDB) · [SNS](../../wiki/SNS) · [EventBridge](../../wiki/EventBridge) · [SSM](../../wiki/SSM) · [ECS](../../wiki/ECS) · [API Gateway](../../wiki/API-Gateway)
 - [Aspire Integration](../../wiki/Aspire-Integration) — .NET Aspire guide
 - [Dashboard](../../wiki/Dashboard) — Built-in monitoring UI
+- [Packaging](../../wiki/Packaging) — NuGet package layout and release process
 
 ## 🛠️ Building
 

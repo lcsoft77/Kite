@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>In-process AWS Lambda execution and endpoints for Kite, an AWS cloud emulator for .NET. Runs and debugs .NET Lambda functions directly in your IDE.</Description>
+    <PackageTags>$(PackageTags);serverless</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

@@ -35,6 +35,7 @@
 ### Integration & Tools
 - [Aspire Integration](Aspire-Integration) — .NET Aspire integration guide
 - [Dashboard](Dashboard) — Built-in monitoring dashboard
+- [Packaging](Packaging) — NuGet package layout and release process
 
 ## Quick Example
 

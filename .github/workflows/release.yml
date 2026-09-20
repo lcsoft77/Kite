@@ -1,0 +1,81 @@
+name: Publish NuGet packages
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version to build (e.g. 0.1.0 or 0.1.0-preview.1)'
+        required: true
+      publish:
+        description: 'Push the packages to nuget.org'
+        type: boolean
+        default: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Source Link embeds commit information, so fetch the full history.
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            # Tag v1.2.3 -> 1.2.3
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building version $VERSION"
+
+      - name: Restore dependencies
+        run: dotnet restore Kite.slnx
+
+      - name: Build
+        run: >
+          dotnet build Kite.slnx --no-restore --configuration Release
+          -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Run unit tests
+        run: dotnet test tests/Kite.Tests.Unit/Kite.Tests.Unit.csproj --no-build --no-restore --configuration Release
+
+      - name: Pack
+        run: >
+          dotnet pack Kite.slnx --no-build --no-restore --configuration Release
+          -p:Version=${{ steps.version.outputs.version }}
+          --output ${{ runner.temp }}/packages
+
+      - name: Upload packages as build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ${{ runner.temp }}/packages/*
+
+      - name: Push to nuget.org
+        if: github.event_name == 'push' || github.event.inputs.publish == 'true'
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "::error::NUGET_API_KEY secret is not set; cannot publish."
+            exit 1
+          fi
+          dotnet nuget push "${{ runner.temp }}/packages/*.nupkg" \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key "$NUGET_API_KEY" \
+            --skip-duplicate

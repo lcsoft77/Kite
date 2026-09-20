@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kite.Host\Kite.Host.csproj" />
+    <ProjectReference Include="..\..\src\Kite.Dashboard\Kite.Dashboard.csproj" />
+  </ItemGroup>
+</Project>

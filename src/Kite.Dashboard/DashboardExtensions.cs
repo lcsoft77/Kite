@@ -167,12 +167,25 @@ public static class DashboardExtensions
     }
 
     /// <summary>
-    /// Locates the Blazor framework assets directory in the NuGet global packages cache.
-    /// The assets are provided by the microsoft.aspnetcore.app.internal.assets package whose
-    /// version matches the current ASP.NET Core runtime.
+    /// Locates the Blazor framework assets directory, preferring a copy sitting next to the
+    /// application and falling back to the NuGet global packages cache. In the cache the assets
+    /// are provided by the microsoft.aspnetcore.app.internal.assets package whose version
+    /// matches the current ASP.NET Core runtime.
     /// </summary>
     internal static string? FindBlazorFrameworkAssetsPath()
     {
+        // A copy deployed alongside the app wins: a published application may run on a machine
+        // that has no NuGet cache at all.
+        foreach (var localRoot in new[] { AppContext.BaseDirectory, Path.GetDirectoryName(typeof(DashboardExtensions).Assembly.Location) })
+        {
+            if (string.IsNullOrEmpty(localRoot))
+                continue;
+
+            var localPath = Path.Combine(localRoot, "_framework");
+            if (File.Exists(Path.Combine(localPath, "blazor.web.js")))
+                return localPath;
+        }
+
         // Respect customised NuGet package locations via NUGET_PACKAGES env var
         var nugetPackagesRoot = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
         if (string.IsNullOrEmpty(nugetPackagesRoot))

@@ -1,0 +1,45 @@
+<Project>
+
+  <!--
+    Repo-wide build settings. Imported automatically by every project in the tree
+    (a project's own PropertyGroup still wins, since this file is imported first).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!--
+    Nothing is packable unless it opts in. The shippable libraries under src/ opt in
+    via src/Directory.Build.props; tests, examples and sample apps stay unpackable.
+  -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- Package metadata shared by every Kite package. -->
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <Authors>lcsoft77</Authors>
+    <Product>Kite</Product>
+    <Copyright>Copyright (c) Kite contributors</Copyright>
+    <PackageProjectUrl>https://github.com/lcsoft77/kite</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/lcsoft77/kite</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>aws;emulator;localstack;lambda;testing;local-development</PackageTags>
+  </PropertyGroup>
+
+  <!--
+    Deterministic builds + Source Link. Source Link ships in the .NET SDK since 8.0,
+    so no PackageReference is needed for GitHub-hosted repositories.
+  -->
+  <PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>

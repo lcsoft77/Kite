@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>.NET Aspire hosting integration for Kite, an AWS cloud emulator for .NET. Adds the emulator, its resources and its dashboard to an Aspire AppHost.</Description>
+    <PackageTags>$(PackageTags);aspire;hosting</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

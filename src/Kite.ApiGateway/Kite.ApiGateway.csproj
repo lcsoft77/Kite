@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>API Gateway emulation (route matching, path parameters and Lambda proxy integration) for Kite, an AWS cloud emulator for .NET.</Description>
+    <PackageTags>$(PackageTags);apigateway</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

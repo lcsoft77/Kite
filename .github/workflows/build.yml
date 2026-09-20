@@ -32,3 +32,14 @@ jobs:
 
       - name: Run integration tests
         run: dotnet test tests/Kite.Tests.Integration/Kite.Tests.Integration.csproj --no-build --no-restore --configuration Release --verbosity normal
+
+      # Catches packaging regressions (missing metadata, non-packable dependencies)
+      # on every push instead of at release time.
+      - name: Pack
+        run: dotnet pack Kite.slnx --no-build --no-restore --configuration Release --output ${{ runner.temp }}/packages
+
+      - name: Upload packages as build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ${{ runner.temp }}/packages/*
