@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Adds WithDashboard to the Kite .NET Aspire integration, hosting the Kite Blazor dashboard.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kite.Aspire\Kite.Aspire.csproj" />
+    <ProjectReference Include="..\Kite.Dashboard\Kite.Dashboard.csproj" />
+  </ItemGroup>
+</Project>

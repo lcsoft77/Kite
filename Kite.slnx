@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Kite.ApiGateway/Kite.ApiGateway.csproj" />
     <Project Path="src/Kite.Aspire/Kite.Aspire.csproj" />
+    <Project Path="src/Kite.Aspire.Dashboard/Kite.Aspire.Dashboard.csproj" />
     <Project Path="src/Kite.Core/Kite.Core.csproj" />
     <Project Path="src/Kite.Dashboard/Kite.Dashboard.csproj" />
     <Project Path="src/Kite.ECS/Kite.ECS.csproj" />

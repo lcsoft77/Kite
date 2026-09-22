@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>Amazon ECS emulation for Kite: clusters, task definitions and tasks.</Description>
   </PropertyGroup>
 
   <ItemGroup>

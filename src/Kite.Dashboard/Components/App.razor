@@ -1,10 +1,3 @@
-@{
-    // The CSS isolation bundle for the Dashboard RCL. Use the Dashboard's own assembly
-    // name rather than the entry-point assembly, because when the Dashboard runs as a
-    // standalone app (RunDashboardAsync) the entry assembly is the Aspire AppHost which
-    // does not contain scoped CSS for the Dashboard components.
-    var dashboardAssemblyName = typeof(App).Assembly.GetName().Name ?? "kite.Dashboard";
-}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,13 +6,13 @@
     <title>Kite Dashboard</title>
     <base href="/" />
     <link rel="stylesheet" href="_content/Microsoft.FluentUI.AspNetCore.Components/css/reboot.css" />
-    <link rel="stylesheet" href="@($"{dashboardAssemblyName}.styles.css")" />
-    <link rel="stylesheet" href="_content/kite.Dashboard/app.css" />
+    <link rel="stylesheet" href="_content/Microsoft.FluentUI.AspNetCore.Components/Microsoft.FluentUI.AspNetCore.Components.bundle.scp.css" />
+    <link rel="stylesheet" href="_content/Kite.Dashboard/app.css" />
     <HeadOutlet @rendermode="@InteractiveServer" />
 </head>
 <body>
     <Routes @rendermode="@InteractiveServer" />
     <script src="_framework/blazor.web.js"></script>
-    <script src="_content/kite.Dashboard/download.js"></script>
+    <script src="_content/Kite.Dashboard/download.js"></script>
 </body>
 </html>

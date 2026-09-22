@@ -10,6 +10,17 @@ The dashboard provides a web-based UI for viewing the status and details of all 
 
 The dashboard is enabled via the `UseDashboard()` extension method in the host configuration. Once running, it is accessible through the emulator's web interface.
 
+### Packages
+
+| Scenario | Package | Call |
+|---|---|---|
+| Standalone host | `Kite.Dashboard` | `KiteBuilder.Create()...Build().UseDashboard()` |
+| .NET Aspire AppHost | `Kite.Aspire.Dashboard` | `builder.AddKite()...WithDashboard()` (runs on the emulator port + 1 by default) |
+
+`WithDashboard()` lives in `Kite.Aspire.Dashboard` (namespace `Kite.Aspire`), so `Kite.Aspire` itself does not depend on the dashboard.
+
+The dashboard is self-contained: its CSS, JavaScript, the Fluent UI assets and `blazor.web.js` are embedded in `Kite.Dashboard.dll` and served through endpoints. It works with a plain `Microsoft.NET.Sdk` project and does not require `Microsoft.NET.Sdk.Web`, static web asset manifests or a populated NuGet cache at runtime. It also no longer changes `ASPNETCORE_ENVIRONMENT`.
+
 ## Dashboard Pages
 
 ### Main Dashboard

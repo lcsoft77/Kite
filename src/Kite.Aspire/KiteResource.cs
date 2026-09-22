@@ -1,4 +1,6 @@
 using Aspire.Hosting.ApplicationModel;
+using Kite.Core;
+using Microsoft.AspNetCore.Builder;
 
 namespace Kite.Aspire;
 
@@ -15,6 +17,12 @@ public sealed class KiteResource(string name) : Resource(name), IResourceWithCon
     internal string SecretAccessKey { get; set; } = "test";
     internal bool DashboardEnabled { get; set; }
     internal int DashboardPort { get; set; }
+
+    /// <summary>
+    /// Starts the dashboard. Set by the Kite.Aspire.Dashboard package via <c>WithDashboard</c>,
+    /// so that Kite.Aspire itself does not depend on the dashboard assembly.
+    /// </summary>
+    internal Func<IServiceRegistry, int, Action<WebApplicationBuilder>?, CancellationToken, Task>? DashboardRunner { get; set; }
 
     internal List<LambdaFunctionResource> Lambdas { get; } = [];
     internal List<SqsQueueResource> SqsQueues { get; } = [];

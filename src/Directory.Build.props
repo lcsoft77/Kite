@@ -1,0 +1,41 @@
+<Project>
+
+  <!-- Shared build settings for every project under src/. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Many public members still lack XML docs; surface them again once documented. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <!-- NuGet package metadata. Per-package <Description> lives in each csproj. -->
+  <PropertyGroup>
+    <Authors>Lorenzo Caldon</Authors>
+    <Copyright>Copyright (c) Lorenzo Caldon</Copyright>
+    <PackageTags>aws;localstack;emulator;lambda;sqs;s3;dynamodb;sns;eventbridge;aspire;testing</PackageTags>
+    <PackageProjectUrl>https://github.com/lcsoft77/Kite</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/lcsoft77/Kite</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- Matches the LICENSE file at the repo root (GPL-3.0). Revisit before the first public release. -->
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <!-- Version comes from git tags (v1.2.3); untagged builds get 0.0.0-preview.0.<height>. -->
+  <PropertyGroup>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerDefaultPreReleaseIdentifiers>preview.0</MinVerDefaultPreReleaseIdentifiers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" Version="8.0.0" PrivateAssets="all" />
+    <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+</Project>
