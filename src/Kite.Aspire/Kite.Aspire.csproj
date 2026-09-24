@@ -1,27 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>.NET Aspire hosting integration for Kite: add the AWS emulator to an Aspire AppHost.</Description>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="AppHost1\**" />
-  </ItemGroup>
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>Kite.Tests.Unit</_Parameter1>
     </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Kite.Aspire.Dashboard</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting" Version="13.3.5" />
+    <PackageReference Include="Aspire.Hosting" Version="13.5.4" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Kite.Core\Kite.Core.csproj" />
     <ProjectReference Include="..\Kite.Host\Kite.Host.csproj" />
-    <ProjectReference Include="..\Kite.Dashboard\Kite.Dashboard.csproj" />
   </ItemGroup>
 </Project>

@@ -102,7 +102,7 @@ public class EcsTask
 
     /// <summary>
     /// PID of the local process started by RunTask when
-    /// <see cref="EcsTaskDefinition.LocalProcessPath"/> is configured.
+    /// a local process path is configured on the task definition builder.
     /// </summary>
     [JsonIgnore]
     public int? ProcessId { get; set; }

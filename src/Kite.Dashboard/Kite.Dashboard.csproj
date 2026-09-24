@@ -1,19 +1,40 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <IsPackable>false</IsPackable>
+    <Description>Blazor Server dashboard for Kite.</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.14.0" />
+    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.14.0" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.14.0" />
-    <!-- Ensures Blazor framework JS files (blazor.web.js, blazor.server.js) are in the
-         NuGet cache so the standalone dashboard can serve them at runtime. The Web SDK
-         auto-references this package but the Razor SDK (used by RCLs) does not. -->
-    <PackageReference Include="Microsoft.AspNetCore.App.Internal.Assets" Version="10.0.5" PrivateAssets="all" />
+    <!-- Source of blazor.web.js. Build-time only: the file is embedded in this assembly (see below). -->
+    <PackageReference Include="Microsoft.AspNetCore.App.Internal.Assets" Version="10.0.12" PrivateAssets="all" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <!--
+    Every static file the dashboard serves is embedded in this assembly and exposed through
+    endpoints (DashboardAssets.MapDashboardAssets). This makes the dashboard independent of the
+    consumer's SDK, of static web asset manifests and of the NuGet cache layout.
+    LogicalName = "kite-assets/" + the URL path the browser requests.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\**\*"
+                      LogicalName="kite-assets/_content/Kite.Dashboard/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PkgMicrosoft_AspNetCore_App_Internal_Assets)' != ''">
+    <EmbeddedResource Include="$(PkgMicrosoft_AspNetCore_App_Internal_Assets)\_framework\blazor.web.js"
+                      LogicalName="kite-assets/_framework/blazor.web.js" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PkgMicrosoft_FluentUI_AspNetCore_Components)' != ''">
+    <FluentAsset Include="$(PkgMicrosoft_FluentUI_AspNetCore_Components)\staticwebassets\**\*"
+                 Exclude="$(PkgMicrosoft_FluentUI_AspNetCore_Components)\staticwebassets\**\*.map;$(PkgMicrosoft_FluentUI_AspNetCore_Components)\staticwebassets\*.bundle.scp.css" />
+    <EmbeddedResource Include="@(FluentAsset)"
+                      LogicalName="kite-assets/_content/Microsoft.FluentUI.AspNetCore.Components/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- The scoped-CSS bundle carries a content hash in its file name; embed it under a stable name. -->
+    <EmbeddedResource Include="$(PkgMicrosoft_FluentUI_AspNetCore_Components)\staticwebassets\*.bundle.scp.css"
+                      LogicalName="kite-assets/_content/Microsoft.FluentUI.AspNetCore.Components/Microsoft.FluentUI.AspNetCore.Components.bundle.scp.css" />
   </ItemGroup>
 
   <ItemGroup>

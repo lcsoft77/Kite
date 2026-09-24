@@ -3,7 +3,6 @@ using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Eventing;
 using Aspire.Hosting.Lifecycle;
 using Kite.Core;
-using Kite.Dashboard;
 using Kite.Host;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -167,9 +166,9 @@ internal sealed class KiteLifecycleHook(
 
             // Start dashboard on a separate port if enabled
             Task? dashboardTask = null;
-            if (resource.DashboardEnabled)
+            if (resource.DashboardEnabled && resource.DashboardRunner is { } runDashboard)
             {
-                dashboardTask = DashboardExtensions.RunDashboardAsync(
+                dashboardTask = runDashboard(
                     emulator.Registry,
                     resource.DashboardPort,
                     wb => wb.Logging.AddProvider(new ResourceLoggerProvider(resourceLogger)),

@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.3.5">
+<Project Sdk="Aspire.AppHost.Sdk/13.5.4">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -13,6 +13,7 @@
     <ProjectReference Include="../ECS.Task/ECS.Task.csproj" />
     <ProjectReference Include="..\ECS.Sender\ECS.Sender.csproj" />
     <ProjectReference Include="..\..\..\..\src\Kite.Aspire\Kite.Aspire.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\..\..\..\src\Kite.Aspire.Dashboard\Kite.Aspire.Dashboard.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
 
 </Project>
