@@ -1,0 +1,107 @@
+name: Release
+
+# Pushing a tag such as v0.1.0 (or v0.2.0-preview.1) tests, packs and publishes every Kite.* package.
+# The package version comes from the tag (MinVer), so all packages always share the same version.
+# "Run workflow" from the Actions tab does a dry run: it builds and packs, but publishes nothing.
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # MinVer derives the version from git tags, so it needs the full history.
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore Kite.slnx
+
+      - name: Build
+        run: dotnet build Kite.slnx --no-restore --configuration Release
+
+      - name: Run unit tests
+        run: dotnet test tests/Kite.Tests.Unit/Kite.Tests.Unit.csproj --no-build --configuration Release
+
+      - name: Run integration tests
+        run: dotnet test tests/Kite.Tests.Integration/Kite.Tests.Integration.csproj --no-build --configuration Release
+
+      - name: Pack
+        run: |
+          # One pack per library project under src/. Projects with IsPackable=false are skipped by dotnet pack.
+          for project in src/*/*.csproj; do
+            dotnet pack "$project" --no-build --configuration Release --output artifacts
+          done
+          ls -1 artifacts
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: artifacts/*
+          if-no-files-found: error
+
+  publish:
+    # Only real tag pushes publish; a manual run stops after "pack".
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: pack
+    runs-on: ubuntu-latest
+    # Optionally add required reviewers to this environment (Settings > Environments) to approve each release.
+    environment: nuget
+    permissions:
+      contents: write
+      id-token: write # lets the job request a GitHub OIDC token for NuGet trusted publishing
+
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: artifacts
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # Trusted publishing: no long-lived API key is stored. NuGet exchanges the GitHub OIDC token for an
+      # API key that is valid for 1 hour, so this step must stay right before the push.
+      - name: NuGet login (OIDC to temporary API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          # nuget.org profile name (not the email address).
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push to nuget.org
+        # Each .nupkg is pushed together with its matching .snupkg (symbols).
+        run: >
+          dotnet nuget push "artifacts/*.nupkg"
+          --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Tags with a hyphen (v0.2.0-preview.1) are published as pre-releases.
+          prerelease=""
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then prerelease="--prerelease"; fi
+          gh release create "${GITHUB_REF_NAME}" artifacts/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            $prerelease
