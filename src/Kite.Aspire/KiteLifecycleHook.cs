@@ -20,7 +20,7 @@ internal sealed class KiteLifecycleHook(
     ILogger<KiteLifecycleHook> logger) : IDistributedApplicationEventingSubscriber, IAsyncDisposable
 {
     private readonly List<Task> _runningTasks = [];
-    private readonly Lock _linkedCancellationTokenSourcesLock = new();
+    private readonly object _linkedCancellationTokenSourcesLock = new();
     private readonly List<CancellationTokenSource> _linkedCancellationTokenSources = [];
     private readonly CancellationTokenSource _cts = new();
 
